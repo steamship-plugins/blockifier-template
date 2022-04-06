@@ -4,22 +4,28 @@ A Convert is responsible for transforming some type of data into
 Steamship's internal Block format.
 """
 
-from steamship import Block, BlockTypes, MimeTypes, SteamshipError
-from steamship.app import App, post, create_handler, Response
-from steamship.data.converter import ConvertResponse, ConvertRequest
+from steamship.app import App, Response, post, create_handler
 from steamship.plugin.converter import Converter
 from steamship.plugin.service import PluginResponse, PluginRequest
+from steamship.base.error import SteamshipError
+from steamship.base import MimeTypes
+from steamship.data.block import Block
+from steamship.data.file import File
+from steamship.data.tags import TagKind, DocTag, Tag
+from steamship.plugin.inputs.raw_data_plugin_input import RawDataPluginInput
+from steamship.plugin.outputs.block_and_tag_plugin_output import BlockAndTagPluginOutput
 
 
 class ConverterPlugin(Converter, App):
     """"Example Steamship Converter plugin."""
 
-    def run(self, request: PluginRequest[ConvertRequest]) -> PluginResponse[ConvertResponse]:
+    def run(self, request: PluginRequest[RawDataPluginInput]) -> PluginResponse[BlockAndTagPluginOutput]:
         """Every plugin implements a `run` function.
 
         This template plugin does an extremely simple form of text parsing:
-            - It checks that the incoming data is text
-            - It then interprets any newline character as a paragraph break
+            - It checks that the incoming data is text.
+            - It then interprets any newline character as a paragraph break.
+            - It returns a single block spanning all of the text, with tags for those paragraphs.
         """
 
         # Only accept content of type text/plain. Otherwise return an error.
@@ -37,18 +43,37 @@ class ConverterPlugin(Converter, App):
 
         # Now let's split the text into paragraphs by splitting on newline.
         paragraphs = request.data.data.split("\n")
-
         paragraphs = [p.strip() for p in paragraphs] # Strip extra whitespace
         paragraphs = list(filter(lambda x: len(x) > 0, paragraphs)) # Eliminate empty paragraphs
 
-        # Finally we'll return a tree of Blocks, Steamship's internal format
-        document = Block(type=BlockTypes.Document, children=[])
-        for text in paragraphs:
-            document.children.append(Block(type=BlockTypes.Paragraph, text=text))
+        # Now let's reconstruct the text.
+        block = Block(tags=[])
+        for p in paragraphs:
+            if block.text is None:
+                startIdx = 0
+                block.text = p
+            else:
+                block.text += '\n\n'
+                startIdx = len(block.text)
+                block.text += p
+
+            # Create a tag for this para
+            block.tags.append(
+                Tag.CreateRequest(
+                    kind=TagKind.doc,
+                    name=DocTag.paragraph,
+                    startIdx=startIdx, 
+                    endIdx=len(block.text)
+                )
+            )
 
         # And return the response. All plugins return a PluginResponse. Converter Plugins set the data
         # field of this object to a ConvertResponse.
-        return PluginResponse(data=ConvertResponse(root=document))
+        return PluginResponse(data=BlockAndTagPluginOutput(
+            file=File.CreateRequest(
+                blocks=[block]
+            )
+        ))
 
     @post('convert')
     def convert(self, **kwargs) -> Response:
@@ -61,8 +86,7 @@ class ConverterPlugin(Converter, App):
         """
         convertRequest = Converter.parse_request(request=kwargs)
         convertResponse = self.run(convertRequest)
-        ret = Converter.response_to_dict(convertResponse)
-        return Response(json=ret)
+        return Converter.response_to_dict(convertResponse)
 
 
 handler = create_handler(ConverterPlugin)
