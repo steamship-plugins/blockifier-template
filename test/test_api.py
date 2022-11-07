@@ -22,7 +22,7 @@ def test_blockifier():
     request = PluginRequest(data=RawDataPluginInput(data=roses, defaultMimeType="text/plain"))
     response = blockifier.run(request)
 
-    assert response.status.state == TaskState.succeeded
+    assert (response.status.state is TaskState.succeeded)
 
     blockified_file = response.data.file
     assert (blockified_file is not None)

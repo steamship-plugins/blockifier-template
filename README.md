@@ -78,7 +78,7 @@ from steamship import Steamship, File, MimeTypes, Tag
 MY_PLUGIN_HANDLE = ".. fill this out .."
 
 client = Steamship(workspace="my-workspace")
-blockifier = client.use_plugin(MY_PLUGIN_HANDLE)
+blockifier = client.use_plugin(plugin_handle=MY_PLUGIN_HANDLE, plugin_instance="unique-instance-id")
 test_file = Path("./test_data/king_speech.txt")
 with test_file.open("rb") as txt:
     file = File.create(client, content=txt.read(), mime_type=MimeTypes.TXT)
