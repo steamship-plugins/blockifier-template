@@ -4,6 +4,7 @@
   "version": "0.0.1",
   "description": "",
   "author": "",
+  "public": false,
   "entrypoint": "src.api.handler",
   "plugin": {
     "isTrainable": false,
