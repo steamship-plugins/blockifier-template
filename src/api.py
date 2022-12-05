@@ -81,4 +81,3 @@ class BlockifierPlugin(Blockifier):
         ))
 
 
-handler = create_handler(BlockifierPlugin)
