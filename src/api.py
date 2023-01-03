@@ -10,7 +10,7 @@ from steamship.base import MimeTypes
 from steamship.data.block import Block
 from steamship.data.file import File
 from steamship.data.tags import TagKind, DocTag, Tag
-from steamship.invocable import Config, InvocableResponse, create_handler
+from steamship.invocable import Config, InvocableResponse
 from steamship.plugin.blockifier import Blockifier
 from steamship.plugin.inputs.raw_data_plugin_input import RawDataPluginInput
 from steamship.plugin.outputs.block_and_tag_plugin_output import BlockAndTagPluginOutput
